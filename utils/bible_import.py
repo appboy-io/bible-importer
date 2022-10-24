@@ -1,3 +1,4 @@
+import sys
 from utils.constants import APP_CONSTANT
 from utils.error_constants import ERROR_CONSTANTS, SystemCheckException
 from pathlib import Path
@@ -6,7 +7,6 @@ import json
 import re
 from utils.bible_books import BOOKS
 from models import BibleVerse
-
 
 class BibleImporter():
     def download_bible():
@@ -25,26 +25,32 @@ class BibleImporter():
                 continue;
 
             print("Importing: ", language)
-            file = open(str(language) + "/bible.json", encoding="utf8")
-            data = json.load(file)
+            try:
+                file = open(str(language) + "/bible.json", encoding="utf8")
+            except Exception as exception:
+                print("Could not open/read file:", str(language) + "/bible.json")
+                print(exception)
+                sys.exit(1)
+            with file:
+                data = json.load(file)
 
             
-            for book in data['Book']:
-                for chapter in book['Chapter']:
-                    for verse in chapter['Verse']:
-                        print(verse['Verseid'])
-                        result = re.search(r"(\d{0,2}).(\d{0,2}).(\d{0,3})", verse['Verseid'])
-                        bible_book_int = int(result.group(1)) + 1
-                        chapter_int = int(result.group(2)) + 1
-                        verse_int = int(result.group(3)) + 1
-                        bible_verse = BibleVerse.create(
-                            book = BOOKS[bible_book_int],
-                            chapter = chapter_int,
-                            verse = verse_int,
-                            text = verse['Verse'],
-                            language = language.name
-                        )
-                        bible_verses.append(bible_verse)
+                for book in data['Book']:
+                    for chapter in book['Chapter']:
+                        for verse in chapter['Verse']:
+                            print(verse['Verseid'])
+                            result = re.search(r"(\d{0,2}).(\d{0,2}).(\d{0,3})", verse['Verseid'])
+                            bible_book_int = int(result.group(1)) + 1
+                            chapter_int = int(result.group(2)) + 1
+                            verse_int = int(result.group(3)) + 1
+                            bible_verse = BibleVerse.create(
+                                book = BOOKS[bible_book_int],
+                                chapter = chapter_int,
+                                verse = verse_int,
+                                text = verse['Verse'],
+                                language = language.name
+                            )
+                            bible_verses.append(bible_verse)
 
         for verse in bible_verses:
             verse.save()
